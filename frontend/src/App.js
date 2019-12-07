@@ -225,6 +225,7 @@ class LoggedInState extends React.Component {
       this.shiftTab = this.shiftTab.bind(this);
       this.checkIfScrum = this.checkIfScrum.bind(this);
       this.handleSelected = this.handleSelected.bind(this);
+      this.checkIfPO = this.checkIfPO.bind(this);
       this.state = {
         ProjectsView:false,
         Projects:[],
@@ -232,7 +233,8 @@ class LoggedInState extends React.Component {
         currentTab: "productBacklog",
         ws: null,
         isScrumMaster:false,
-        productSelected:0
+        productSelected:0,
+        isProductOwner:false
       };
   }
 
@@ -367,6 +369,32 @@ checkIfScrum() {
       });
   }
 
+
+  checkIfPO() {
+    fetch('http://localhost:8000/projects/isProductOwner/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `JWT ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({username:this.props.Name})
+    })
+      .then(res => res.json())
+      .then(json => {
+        console.log(json);
+        if(json.stat == "success"){
+          console.log("Check if PO" + json);
+          this.setState({
+            isProductOwner: json.data,
+          });
+          console.log(this.state.isProductOwner);
+        }
+        else{
+          console.log("Check if PO failed");
+        }
+      });
+  }
+
   getProjects(){
     console.log(this.props.Name)
     fetch('http://localhost:8000/projects/showProjects/', {
@@ -381,6 +409,7 @@ checkIfScrum() {
       .then(json => {
         console.log("Success get project");
         console.log(json);
+        this.checkIfPO();
         if(json.detail!=="Signature has expired." && json.data.length>0){
           console.log("Inside jsondata")
           console.log("PROJECTS"+json.data)
@@ -393,6 +422,7 @@ checkIfScrum() {
           console.log("PROJECTS SET"+this.state.Projects[0].title)
           this.getProductOwnerName();
           this.checkIfScrum();
+          
           this.render();
           if(arr.length===1){
             $("#deleteProject").attr('disabled',false);
@@ -567,10 +597,12 @@ checkIfScrum() {
             <button class="btn btn-outline-success my-2 my-sm-0" id="productBacklog" onClick={this.shiftTab}>Product</button>&nbsp;&nbsp;
               <button class="btn btn-outline-success my-2 my-sm-0" id="sprint" onClick={this.shiftTab}>Sprint</button>&nbsp;&nbsp;
               <button class="btn btn-outline-success my-2 my-sm-0" id="scrum" onClick={this.shiftTab}>Progress</button>&nbsp;&nbsp;
-              <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search"/>
-              <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>&nbsp;&nbsp;
-              <button id="createProject" class="btn btn-outline-success my-2 my-sm-0" data-toggle="modal" data-target="#exampleModal" data-whatever="@getbootstrap" onClick={this.initiateCreateModelButton}>Create Project</button>&nbsp;&nbsp;
-              <button id="deleteProject" class="btn btn-outline-danger my-2 my-sm-0" data-toggle="modal" data-target="#exampleModal" data-whatever="@getbootstrap" onClick={this.deleteProject}>Delete Project</button>&nbsp;&nbsp;
+              {this.state.isProductOwner &&
+                <button id="createProject" class="btn btn-outline-success my-2 my-sm-0" data-toggle="modal" data-target="#exampleModal" data-whatever="@getbootstrap" onClick={this.initiateCreateModelButton}>Create Project</button>
+              }&nbsp;&nbsp;
+              {this.state.ProductOwnerName === this.props.Name &&
+                <button id="deleteProject" class="btn btn-outline-danger my-2 my-sm-0" data-toggle="modal" data-target="#exampleModal" data-whatever="@getbootstrap" onClick={this.deleteProject}>Delete Project</button>
+              }&nbsp;&nbsp;
               <button class="btn btn-outline-success my-2 my-sm-0" onClick={this.handleLogout}>Log Out</button>
               
             </form>

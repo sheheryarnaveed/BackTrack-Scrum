@@ -56,6 +56,8 @@ def isScrumMaster(request):
         return Response({'stat': 'success', 'data': True})
     Response({'stat': 'failed', 'data': False})
 
+
+
 @api_view(['POST'])
 def isDeveloper(request):
     user_id = userID(request.data["username"])
@@ -108,8 +110,9 @@ def showProjects(request):
 
 @api_view(['POST'])
 def createProject(request):
-
-    p = pro(title=request.data["title"], content=request.data["content"], sprintCapacity=request.data["capacity"], author=userInstance(request.data["username"]))
+    po = ProductOwner(author=userInstance(request.data["username"]))
+    po.save()
+    p = pro(title=request.data["title"], content=request.data["content"], sprintCapacity=request.data["capacity"], author=userInstance(request.data["username"]), product_owner=po)
     p.save()
     projects = pro.objects.all().filter(id=int(p.id))
 
@@ -348,7 +351,7 @@ def createPBI(request):
             product=mapProduct(request.data["product_id"]), priority=targetpriority)
     p.save()
     # allObjects = Pbi.objects.all().filter(id=p.id)
-    allObjects = Pbi.objects.all().order_by('priority')
+    allObjects = Pbi.objects.all().filter(product=mapProduct(request.data["product_id"])).order_by('priority')
     serializer = PBISerializer(allObjects, context={'request': request}, many=True)
 
     return Response({'stat': 'success', 'data': serializer.data})
@@ -375,7 +378,7 @@ def createPBITask(request):
 def deletePBI(request):
     obj = Pbi.objects.get(id=request.data["PBI_id"])
     obj.delete()
-    allObjects = Pbi.objects.all().order_by('priority')
+    allObjects = Pbi.objects.all().order_by('priority').filter(product=obj.product)
     for num, listObject in enumerate(allObjects):
         listObject.priority = num + 1
         listObject.save()
@@ -445,7 +448,7 @@ def editPBI(request):
     obj.storyPoints = int(request.data["storyPoints"])
     obj.priority = targetpriority
     obj.save()
-    allObjects = Pbi.objects.all().order_by('priority')
+    allObjects = Pbi.objects.all().filter(product=obj.product).order_by('priority')
     serializer = PBISerializer(allObjects, context={'request': request}, many=True)
     return Response({'stat': 'success', 'data': serializer.data})
 
@@ -488,7 +491,7 @@ def priorityUp(request):
     obj.save()
     target.save()
 
-    allObjects = Pbi.objects.all().order_by('priority')
+    allObjects = Pbi.objects.all().filter(product=obj.product).order_by('priority')
     serializer = PBISerializer(allObjects, context={'request': request}, many=True)
     return Response({'stat': 'success', 'data': serializer.data})
 
@@ -508,7 +511,7 @@ def priorityDown(request):
     obj.save()
     target.save()
 
-    allObjects = Pbi.objects.all().order_by('priority')
+    allObjects = Pbi.objects.all().filter(product=obj.product).order_by('priority')
     serializer = PBISerializer(allObjects, context={'request': request}, many=True)
     return Response({'stat': 'success', 'data': serializer.data})
 
@@ -601,7 +604,7 @@ def addPBItoSprint(request):
     obj.checked = bool(request.data["checked"])
     obj.status = "In Progress"
     obj.save()
-    queryset = Pbi.objects.all()
+    queryset = Pbi.objects.all().filter(product=obj.product)
     serializer = PBISerializer(queryset, context={'request': request}, many=True)
     return Response({'stat': 'success', 'data': serializer.data})
 
@@ -638,7 +641,7 @@ def endSprint(request):
     Product.sprintCapacity = int(request.data["sprintCapacity"])
     Product.save()
 
-    queryset = Pbi.objects.all()
+    queryset = Pbi.objects.all().filter(product=Product)
     serializer = PBISerializer(queryset, context={'request': request}, many=True)
     return Response({'stat': 'success', 'data': serializer.data, 'sprint': Product.ongoingSprint, 'capacity':Product.sprintCapacity})
 
@@ -646,7 +649,8 @@ def endSprint(request):
 def removePBIfromSprint(request):
     obj = Pbi.objects.get(id=request.data["id"])
     obj.checked = 'False'
+    obj.status = "Not Started"
     obj.save()
-    queryset = Pbi.objects.all()
+    queryset = Pbi.objects.all().filter(product=obj.product)
     serializer = PBISerializer(queryset, context={'request': request}, many=True)
     return Response({'stat': 'success', 'data': serializer.data})
