@@ -578,7 +578,7 @@ def validateEmail(request, token, product_title, user_id):
         for each_sm in sm:
             all_scrum.append(each_sm.author)
         if userInstance(user_id) in all_developers:
-            t = TeamMember(author=userInstance(user_id), product=this_product)
+            t = TeamMember(author=userInstance(user_id), product=this_product[0])
             t.save()
             #this_team_member = TeamMember.objects.filter(author=userInstance(user_id))[0]
             #p = pro(title=product_title, content=this_content, created_on=this_created_on, author=this_author,
