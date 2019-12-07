@@ -1754,9 +1754,11 @@ class Projects extends React.Component {
         }
       });
   }
-  getUserID(inviteEmail, e) {
-    console.log("EMAIL IS"+e.target.value)
-    fetch('http://localhost:8000/projects/getUserID/', {
+  async getUserID(email,e) {
+    console.log(e.target)
+    console.log("EMAIL IS: "+e.target.value)
+    var em = e.target.value
+    await fetch('http://localhost:8000/projects/getUserID/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1768,15 +1770,17 @@ class Projects extends React.Component {
       .then(json => {
         if(json.stat === "success"){
           console.log(json.data);
+          console.log(this.state.inviteUserID)
           this.setState({
             inviteUserID: json.data,
           });
+          console.log(this.state.inviteUserID)
         }
         else{
           console.log("Find ID failed");
         }
-      });
-      this.sendInvite(e.target.value);
+      })
+      this.sendInvite(em);
   }
   sendInvite(user_email) {
     console.log("Invite to this user id:"+this.state.inviteUserID)
